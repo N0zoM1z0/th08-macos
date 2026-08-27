@@ -21,8 +21,33 @@ cleanup() {
 }
 trap cleanup EXIT
 
+"${binary}" --data-dir "${smoke_dir}" >"${smoke_dir}/output.txt" 2>&1 &
+smoke_pid=$!
+timed_out=true
+for _ in {1..20}; do
+    if ! kill -0 "${smoke_pid}" 2>/dev/null; then
+        timed_out=false
+        break
+    fi
+    sleep 0.5
+done
+
+if [[ "${timed_out}" == true ]]; then
+    sample "${smoke_pid}" 1 1 -file "${smoke_dir}/sample.txt" >/dev/null 2>&1 || true
+    kill -TERM "${smoke_pid}" 2>/dev/null || true
+    sleep 1
+    kill -KILL "${smoke_pid}" 2>/dev/null || true
+    wait "${smoke_pid}" 2>/dev/null || true
+    echo "The macOS entry point did not reach the data gate within 10 seconds." >&2
+    sed -n '1,80p' "${smoke_dir}/output.txt" >&2
+    if [[ -f "${smoke_dir}/sample.txt" ]]; then
+        sed -n '1,180p' "${smoke_dir}/sample.txt" >&2
+    fi
+    exit 1
+fi
+
 set +e
-"${binary}" --data-dir "${smoke_dir}" >"${smoke_dir}/output.txt" 2>&1
+wait "${smoke_pid}"
 status=$?
 set -e
 
