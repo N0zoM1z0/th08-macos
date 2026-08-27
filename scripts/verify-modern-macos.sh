@@ -19,7 +19,7 @@ if [[ ! -x "${executable}" || ! -f "${plist}" ]]; then
     exit 1
 fi
 
-lipo -verify_arch arm64 "${executable}"
+lipo "${executable}" -verify_arch arm64
 bundle_id="$(plutil -extract CFBundleIdentifier raw -o - "${plist}")"
 if [[ "${bundle_id}" != "org.th08-research.th08-modern" ]]; then
     echo "Unexpected bundle identifier: ${bundle_id}" >&2

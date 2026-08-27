@@ -40,7 +40,7 @@ if [[ ! -f "${probe_object}" ]]; then
 fi
 
 if [[ "$(uname -s)" == "Darwin" ]]; then
-    lipo -verify_arch arm64 "${probe_object}"
+    lipo "${probe_object}" -verify_arch arm64
 else
     file "${probe_object}" | grep -q 'ARM aarch64'
 fi
