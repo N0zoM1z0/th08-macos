@@ -3369,9 +3369,15 @@ ChainCallbackResult TitleScreen::OnUpdateReplayMenu()
             {
                 if (this->currentReplay->header.stageReplayData[i] != NULL)
                 {
+#ifdef TH08_MODERN_64BIT
+                    this->currentReplay->header.stageReplayData[i] = reinterpret_cast<StageReplayData *>(
+                        reinterpret_cast<UINT_PTR>(this->currentReplay) +
+                        reinterpret_cast<UINT_PTR>(this->currentReplay->header.stageReplayData[i]));
+#else
                     this->currentReplay->header.stageReplayData[i] =
                         (StageReplayData *)((u32)this->currentReplay +
                                             (u32)this->currentReplay->header.stageReplayData[i]);
+#endif
                 }
             }
 

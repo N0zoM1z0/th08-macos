@@ -137,12 +137,20 @@ void EnemyManager::Initialize()
     u8 *enemy = reinterpret_cast<u8 *>(&this->enemies[0]);
     i32 i;
 
+#ifdef TH08_MODERN_64BIT
+    memset(this, 0, sizeof(*this));
+#else
     memset(this, 0, 0x9DCF10);
+#endif
     for (i = 0; (u32)i < 4; i++)
         this->timelineEventSlots[i] = -1;
 
     enemy = reinterpret_cast<u8 *>(&this->spawnTemplate);
+#ifdef TH08_MODERN_64BIT
+    memset(enemy, 0, sizeof(Enemy));
+#else
     memset(enemy, 0, 0x53D0);
+#endif
     for (i = 0; i < 2; i++)
         reinterpret_cast<Enemy *>(enemy)->secondaryVms[i].scriptIndex = -1;
     for (i = 0; i < 0x60; i++)

@@ -43,6 +43,22 @@ ZunResult EclManager::Load(char *path)
         return ZUN_ERROR;
     }
 
+#ifdef TH08_MODERN_64BIT
+    for (index = 0; index < 16; index++)
+    {
+        this->timelineTable[index] = reinterpret_cast<EclRawInstruction *>(
+            reinterpret_cast<u8 *>(this->eclFile) + this->eclFile->timelineOffsets[index]);
+    }
+    this->subTable = reinterpret_cast<EclRawInstruction **>(
+        g_ZunMemory.Alloc(this->eclFile->subCount * sizeof(*this->subTable), "ecl subs"));
+    if (this->subTable == NULL)
+        return ZUN_ERROR;
+    for (index = 0; index < this->eclFile->subCount; index++)
+    {
+        this->subTable[index] = reinterpret_cast<EclRawInstruction *>(
+            reinterpret_cast<u8 *>(this->eclFile) + this->eclFile->subOffsets[index]);
+    }
+#else
     for (index = 0; index < 16; index++)
     {
         this->eclFile->timelineOffsets[index] += (u32)this->eclFile;
@@ -53,6 +69,7 @@ ZunResult EclManager::Load(char *path)
     {
         this->subTable[index] += (u32)this->eclFile;
     }
+#endif
 
     return ZUN_SUCCESS;
 }
@@ -61,6 +78,10 @@ void EclManager::Unload()
 {
     if (this->eclFile != NULL)
     {
+#ifdef TH08_MODERN_64BIT
+        g_ZunMemory.Free(this->subTable);
+        this->subTable = NULL;
+#endif
         g_ZunMemory.Free(this->eclFile);
     }
     this->eclFile = NULL;
@@ -73,7 +94,11 @@ ZunResult EclManager::CallEclSub(EnemyEclContext *context, i16 subId)
         return ZUN_SUCCESS;
     }
 
+#ifdef TH08_MODERN_64BIT
+    context->currentInstr = this->subTable[subId];
+#else
     context->currentInstr = (EclRawInstruction *)this->subTable[subId];
+#endif
     context->time = 0;
     context->secondaryTime = 0;
     context->subId = subId;
@@ -171,10 +196,17 @@ i32 EclManager::GetTimelineCount()
 }
 
 // FUNCTION: th08 0x42dfd0
+#ifdef TH08_MODERN_64BIT
+UINT_PTR EclManager::GetTimeline(i32 index)
+{
+    return reinterpret_cast<UINT_PTR>(this->timelineTable[index]);
+}
+#else
 u32 EclManager::GetTimeline(i32 index)
 {
     return this->eclFile->timelineOffsets[index];
 }
+#endif
 
 // FUNCTION: th08 0x0042DFF0
 i32 Spellcard::IsBombDamageEnabled()

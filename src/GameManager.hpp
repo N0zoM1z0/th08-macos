@@ -309,7 +309,11 @@ struct GameManager
         return this->skipCurrentFrame;
     }
 
+#ifdef TH08_MODERN_64BIT
+    UINT_PTR antiTamperHeapJitterAllocation;
+#else
     i32 antiTamperHeapJitterAllocation;
+#endif
     GameConfiguration *cfg;
     ZunGlobals *globals;
     Flsp flsp;

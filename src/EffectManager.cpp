@@ -83,7 +83,11 @@ struct EffectTemplate
 C_ASSERT(sizeof(EffectTemplate) == 0xc);
 C_ASSERT(offsetof(EffectTemplate, updateCallback) == 0x4);
 C_ASSERT(offsetof(EffectTemplate, initializeCallback) == 0x8);
+#ifdef TH08_MODERN_64BIT
+DIFFABLE_STATIC_ARRAY(EffectTemplate, 66, g_EffectTemplates);
+#else
 DIFFABLE_STATIC_ARRAY(EffectTemplate, 20, g_EffectTemplates);
+#endif
 
 // FUNCTION: th08 0x423d70
 Float3 *Float3::operator*=(f32 scalar)
@@ -103,7 +107,11 @@ AnmVm *EffectManager::GetFixedSlotVm(i32 index)
 // FUNCTION: th08 0x425410
 void EffectManager::ResetEffects()
 {
+#ifdef TH08_MODERN_64BIT
+    memset(this, 0, sizeof(*this));
+#else
     memset(this, 0, 0x8B05C);
+#endif
 }
 
 // FUNCTION: th08 0x425430

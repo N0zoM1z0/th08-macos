@@ -998,8 +998,13 @@ ZunResult GameWindow::CheckForRunningGameInstance(HINSTANCE hInstance)
         return ZUN_ERROR;
     }
 
+#ifdef TH08_MODERN_64BIT
+    memset(&startupInfo, 0, sizeof(startupInfo));
+    startupInfo.cb = sizeof(startupInfo);
+#else
     startupInfo.cb = sizeof(startupInfo);
     memset(&startupInfo.lpReserved, 0, sizeof(startupInfo) - 4); // Fill remaining struct members
+#endif
 
     // GetModuleFileNameA will get the absolute path of the TH08 executable
     // GetConsoleTitleA will always fail(?) because TH08 isn't a console application. consoleTitleBuf is clobbered

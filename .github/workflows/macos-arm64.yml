@@ -1,0 +1,53 @@
+name: macOS Apple Silicon
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: th08-macos-arm64-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build-macos-arm64:
+    name: Build arm64 application bundle
+    runs-on: macos-15
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Require an Apple Silicon runner
+        run: test "$(uname -s)" = Darwin && test "$(uname -m)" = arm64
+
+      - name: Validate macOS scripts
+        run: bash -n scripts/*macos*.sh
+
+      - name: Compile all authored sources for arm64
+        env:
+          TH08_MACOS_BUILD_JOBS: "3"
+        run: scripts/build-macos-arm64-probe.sh
+
+      - name: Install native backend dependencies
+        run: brew install cmake ninja pkg-config sdl2 sdl2_image sdl2_ttf fontconfig
+
+      - name: Build and verify the application bundle
+        env:
+          TH08_MACOS_BUILD_JOBS: "3"
+        run: scripts/build-modern-macos.sh
+
+      - name: Package the development bundle
+        run: scripts/package-modern-macos.sh
+
+      - name: Upload the Apple Silicon bundle
+        uses: actions/upload-artifact@v4
+        with:
+          name: th08-modern-macos-arm64
+          path: |
+            build/th08-modern-macos-arm64.zip
+            build/th08-modern-macos-arm64.zip.sha256
+          if-no-files-found: error
+          retention-days: 14

@@ -86,7 +86,11 @@ void __fastcall GameplaySetupThread0043ABD7(void *unused)
         }
 
         size = g_Rng.GetRandomU32InRange(0xffff) + 16;
+#ifdef TH08_MODERN_64BIT
+        gameManager->antiTamperHeapJitterAllocation = reinterpret_cast<UINT_PTR>(malloc(size));
+#else
         gameManager->antiTamperHeapJitterAllocation = reinterpret_cast<i32>(malloc(size));
+#endif
         newCfg = static_cast<GameConfiguration *>(operator new(sizeof(GameConfiguration)));
         gameManager->cfg = newCfg;
         newGlobals = static_cast<ZunGlobals *>(operator new(sizeof(ZunGlobals)));

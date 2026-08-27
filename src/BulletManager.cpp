@@ -492,13 +492,21 @@ void BulletManager::RemoveAllBullets(i32 mode)
         if (g_Player.CheckBulletCancelCollision(&bullet->position, &bullet->sprites.collisionSize) == 2)
         {
             g_ItemManager.SpawnItem(&bullet->position, static_cast<ItemType>(g_Player.bulletCancelItemType), 1);
+#ifdef TH08_MODERN_64BIT
+            memset(bullet, 0, sizeof(*bullet));
+#else
             memset(bullet, 0, 0x10B8);
+#endif
         }
         else if (mode != 4)
         {
             g_ItemManager.SpawnItem(&bullet->position,
                                     static_cast<ItemType>(this->cancelItemType), mode);
+#ifdef TH08_MODERN_64BIT
+            memset(bullet, 0, sizeof(*bullet));
+#else
             memset(bullet, 0, 0x10B8);
+#endif
         }
         else
         {

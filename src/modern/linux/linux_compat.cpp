@@ -25,6 +25,10 @@
 #include <unistd.h>
 #include <vector>
 
+#if defined(__APPLE__)
+#include <mach-o/dyld.h>
+#endif
+
 namespace
 {
 enum HandleKind { HANDLE_FILE, HANDLE_THREAD, HANDLE_EVENT, HANDLE_MUTEX, HANDLE_FIND };
@@ -130,25 +134,50 @@ SDL_Window *g_window;
 std::map<DWORD, std::vector<MSG> > g_threadMessages;
 pthread_mutex_t g_messageMutex = PTHREAD_MUTEX_INITIALIZER;
 
-std::string ExecutableSiblingPath(const char *filename)
+std::string ExecutablePath()
 {
+#if defined(__APPLE__)
+    uint32_t size = 0;
+    _NSGetExecutablePath(NULL, &size);
+    if (size == 0)
+        return std::string();
+    std::vector<char> path(size + 1, 0);
+    if (_NSGetExecutablePath(&path[0], &size) != 0)
+        return std::string();
+    char resolved[PATH_MAX + 1];
+    if (realpath(&path[0], resolved) != NULL)
+        return std::string(resolved);
+    return std::string(&path[0]);
+#else
     char path[PATH_MAX + 1];
     ssize_t count = readlink("/proc/self/exe", path, PATH_MAX);
     if (count <= 0 || count > PATH_MAX)
         return std::string();
     path[count] = '\0';
-    char *separator = strrchr(path, '/');
-    if (separator == NULL)
+    return std::string(path);
+#endif
+}
+
+std::string ExecutableSiblingPath(const char *filename)
+{
+    std::string path = ExecutablePath();
+    if (path.empty())
         return std::string();
-    separator[1] = '\0';
-    return std::string(path) + filename;
+    const std::string::size_type separator = path.rfind('/');
+    if (separator == std::string::npos)
+        return std::string();
+    return path.substr(0, separator + 1) + filename;
 }
 
 void SetApplicationIcon(SDL_Window *window)
 {
     if (window == NULL)
         return;
+#if defined(__APPLE__)
+    const std::string iconPath = ExecutableSiblingPath("../Resources/modern-icon.png");
+#else
     const std::string iconPath = ExecutableSiblingPath("th08-modern.png");
+#endif
     if (iconPath.empty())
         return;
     SDL_Surface *icon = IMG_Load(iconPath.c_str());
@@ -160,7 +189,14 @@ void SetApplicationIcon(SDL_Window *window)
 
 DWORD CurrentThreadIdImpl()
 {
+#if defined(__APPLE__)
+    uint64_t threadId = 0;
+    return pthread_threadid_np(NULL, &threadId) == 0
+               ? static_cast<DWORD>(threadId)
+               : 0;
+#else
     return static_cast<DWORD>(pthread_self());
+#endif
 }
 
 std::string ConvertCp932ToUtf8(const char *text, size_t length)
@@ -581,8 +617,15 @@ int MessageBoxW(HWND, LPCWSTR text, LPCWSTR title, UINT) { fwprintf(stderr, L"%l
 
 DWORD GetModuleFileNameA(HMODULE, LPSTR buffer, DWORD size)
 {
-    ssize_t count = readlink("/proc/self/exe", buffer, size - 1); if (count < 0) return 0;
-    buffer[count] = 0; return static_cast<DWORD>(count);
+    if (buffer == NULL || size == 0)
+        return 0;
+    const std::string path = ExecutablePath();
+    if (path.empty())
+        return 0;
+    const size_t count = path.size() < size - 1 ? path.size() : size - 1;
+    memcpy(buffer, path.data(), count);
+    buffer[count] = 0;
+    return static_cast<DWORD>(count);
 }
 DWORD GetConsoleTitleA(LPSTR buffer, DWORD size) { if (size) buffer[0] = 0; return 0; }
 void GetStartupInfoA(STARTUPINFOA *value) { DWORD size = value->cb; memset(value, 0, size); value->cb = size; }

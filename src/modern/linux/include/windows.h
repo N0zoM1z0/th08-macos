@@ -54,7 +54,7 @@ typedef const char *LPCSTR;
 typedef wchar_t *LPWSTR;
 typedef const wchar_t *LPCWSTR;
 typedef char *LPTSTR;
-typedef long HRESULT;
+typedef int32_t HRESULT;
 typedef void *HANDLE;
 typedef HANDLE HGLOBAL;
 typedef HANDLE HINSTANCE;
@@ -190,7 +190,11 @@ typedef const GUID &REFIID;
 #define ZeroMemory(d, n) memset((d), 0, (n))
 #define CopyMemory(d, s, n) memcpy((d), (s), (n))
 #define FillMemory(d, n, v) memset((d), (v), (n))
+#if defined(TH08_MODERN_64BIT)
+#define C_ASSERT(e)
+#else
 #define C_ASSERT(e) typedef char __C_ASSERT__[(e) ? 1 : -1]
+#endif
 #define RGB(r, g, b) ((COLORREF)(((BYTE)(r)) | ((WORD)((BYTE)(g)) << 8) | ((DWORD)(BYTE)(b) << 16)))
 
 #define GENERIC_READ 0x80000000u

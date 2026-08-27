@@ -27,7 +27,7 @@ source. Strict comparison currently accepts 1,105 of those functions, covering
 | Web | **Playable** | Public WebAssembly/WebGL 2 build |
 | Linux | **Playable** | Native i386 ELF and portable CI package |
 | Windows | **In progress** | Native startup and redistributable packaging are incomplete |
-| macOS | **In progress** | Native backend and packaging have not been implemented |
+| macOS | **Bring-up** | Apple Silicon source gate, native bundle target, and CI are implemented |
 
 The exact-reconstruction lane and the playable-port lanes are independent.
 Running on a modern platform is not an exactness claim, and source presence is
@@ -168,12 +168,13 @@ directory, and ship without Wine or non-redistributable SDK components.
 
 ### macOS
 
-**Status: In progress**
+**Status: Apple Silicon bring-up**
 
-See the [native macOS guide](docs/PLAY_MACOS.md) for the planned platform
-boundary. No native executable or package exists yet. The port needs macOS
-window, input, audio, rendering, and packaging implementations followed by
-validation on real hardware.
+See the [native macOS guide](docs/PLAY_MACOS.md) for the arm64 build and data
+launcher. CI compiles all authored sources and builds an ad-hoc-signed `.app`
+with the SDL2/OpenGL bring-up backend. This is a developer artifact rather
+than a playable release until startup and gameplay are tested on real Apple
+Silicon hardware with legally supplied game data.
 
 ## Exact reconstruction
 

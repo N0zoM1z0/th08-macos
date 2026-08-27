@@ -654,7 +654,11 @@ i32 Player::UpdateMovementAndOptions()
                 option = this->optionStates;
                 for (optionIndex = 0; optionIndex < 4; optionIndex++, option++)
                 {
+#ifdef TH08_MODERN_64BIT
+                    memset(option, 0, sizeof(*option));
+#else
                     memset(option, 0, 0x2F4);
+#endif
                     option->updateCallback =
                         g_PlayerOptionUpdateCallbacks[g_GameManager.shotType].callbacks[optionIndex];
                     option->renderCallback =
@@ -723,7 +727,11 @@ i32 Player::UpdateMovementAndOptions()
                         option2->timer = 0;
                     }
                 }
+#ifdef TH08_MODERN_64BIT
+                memset(option2, 0, sizeof(*option2));
+#else
                 memset(option2, 0, 0x2F4);
+#endif
                 option2->updateCallback =
                     g_PlayerRoute3ExitUpdateCallbacks[route3Index];
                 option2->renderCallback =
@@ -1652,7 +1660,11 @@ ZunResult Player::AddedCallback(Player *player)
         option = player->optionStates;
         for (m = 0; m < 4; ++m, option++)
         {
+#ifdef TH08_MODERN_64BIT
+            memset(option, 0, sizeof(*option));
+#else
             memset(option, 0, 0x2F4);
+#endif
             option->updateCallback =
                 g_PlayerOptionUpdateCallbacks[g_GameManager.shotType].callbacks[m];
             option->renderCallback =
@@ -1724,6 +1736,116 @@ ZunResult Player::LoadShtFile(PlayerRawShtFile **header, const char *path)
     i32 i;
     PlayerShotDescriptor *descriptor;
 
+#ifdef TH08_MODERN_64BIT
+    struct RawShotPowerLevel
+    {
+        u32 descriptorOffset;
+        i32 minimumPower;
+    };
+    struct RawShotDescriptor
+    {
+        i16 fireInterval;
+        i16 fireFrame;
+        Float2 positionOffset;
+        Float2 hitboxSize;
+        f32 angle;
+        f32 speed;
+        i16 damage;
+        i16 extremeGaugeBehavior;
+        i16 sourceOptionIndex;
+        i16 shotType;
+        i16 animationIndex;
+        i16 soundIndex;
+        u32 spawnCallbackIndex;
+        u32 updateCallbackIndex;
+        u32 drawCallbackIndex;
+        u32 collisionCallbackIndex;
+    };
+
+    i32 fileSize = 0;
+    u8 *rawFile = reinterpret_cast<u8 *>(FileSystem::OpenFile(path, &fileSize, 0));
+    if (rawFile == NULL || fileSize < 0x38)
+    {
+        if (rawFile != NULL)
+            g_ZunMemory.Free(rawFile);
+        return ZUN_ERROR;
+    }
+    const u16 powerLevelCount = *reinterpret_cast<const u16 *>(rawFile + 2);
+    if (fileSize < 0x38 + powerLevelCount * static_cast<i32>(sizeof(RawShotPowerLevel)))
+    {
+        g_ZunMemory.Free(rawFile);
+        return ZUN_ERROR;
+    }
+
+    const RawShotPowerLevel *rawPowerLevels =
+        reinterpret_cast<const RawShotPowerLevel *>(rawFile + 0x38);
+    size_t descriptorCount = 0;
+    for (i = 0; i < powerLevelCount; ++i)
+    {
+        size_t offset = rawPowerLevels[i].descriptorOffset;
+        if (offset > static_cast<size_t>(fileSize) - sizeof(RawShotDescriptor))
+        {
+            g_ZunMemory.Free(rawFile);
+            return ZUN_ERROR;
+        }
+        for (;;)
+        {
+            const RawShotDescriptor *rawDescriptor =
+                reinterpret_cast<const RawShotDescriptor *>(rawFile + offset);
+            ++descriptorCount;
+            if (rawDescriptor->fireInterval < 0)
+                break;
+            offset += sizeof(RawShotDescriptor);
+            if (offset > static_cast<size_t>(fileSize) - sizeof(RawShotDescriptor))
+            {
+                g_ZunMemory.Free(rawFile);
+                return ZUN_ERROR;
+            }
+        }
+    }
+
+    const size_t nativeSize = offsetof(PlayerRawShtFile, shotPowerLevels) +
+        powerLevelCount * sizeof(PlayerShotPowerLevel) +
+        descriptorCount * sizeof(PlayerShotDescriptor);
+    PlayerRawShtFile *nativeHeader = reinterpret_cast<PlayerRawShtFile *>(
+        g_ZunMemory.Alloc(nativeSize, "sht native"));
+    if (nativeHeader == NULL)
+    {
+        g_ZunMemory.Free(rawFile);
+        return ZUN_ERROR;
+    }
+    memset(nativeHeader, 0, nativeSize);
+    memcpy(nativeHeader, rawFile, offsetof(PlayerRawShtFile, shotPowerLevels));
+    PlayerShotDescriptor *nativeDescriptor = reinterpret_cast<PlayerShotDescriptor *>(
+        nativeHeader->shotPowerLevels + powerLevelCount);
+
+    for (i = 0; i < powerLevelCount; ++i)
+    {
+        nativeHeader->shotPowerLevels[i].minimumPower = rawPowerLevels[i].minimumPower;
+        nativeHeader->shotPowerLevels[i].descriptors = nativeDescriptor;
+        const RawShotDescriptor *rawDescriptor = reinterpret_cast<const RawShotDescriptor *>(
+            rawFile + rawPowerLevels[i].descriptorOffset);
+        for (;; ++rawDescriptor, ++nativeDescriptor)
+        {
+            memcpy(nativeDescriptor, rawDescriptor, offsetof(PlayerShotDescriptor, spawnCallback));
+            if (rawDescriptor->fireInterval < 0)
+            {
+                ++nativeDescriptor;
+                break;
+            }
+            nativeDescriptor->spawnCallback =
+                g_PlayerShotSpawnCallbacks[rawDescriptor->spawnCallbackIndex];
+            nativeDescriptor->updateCallback =
+                g_PlayerShotUpdateCallbacks[rawDescriptor->updateCallbackIndex];
+            nativeDescriptor->drawCallback =
+                g_PlayerShotDrawCallbacks[rawDescriptor->drawCallbackIndex];
+            nativeDescriptor->collisionCallback = reinterpret_cast<PlayerShotCollisionCallback>(
+                g_PlayerShotCollisionOrDifficultyTable[rawDescriptor->collisionCallbackIndex]);
+        }
+    }
+    g_ZunMemory.Free(rawFile);
+    *header = nativeHeader;
+#else
     *header = reinterpret_cast<PlayerRawShtFile *>(FileSystem::OpenFile(path, NULL, 0));
     if (*header == NULL)
     {
@@ -1751,6 +1873,7 @@ ZunResult Player::LoadShtFile(PlayerRawShtFile **header, const char *path)
             descriptor++;
         }
     }
+#endif
 
     return ZUN_SUCCESS;
 }

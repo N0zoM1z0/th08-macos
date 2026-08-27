@@ -109,7 +109,11 @@ void GuiImpl::StartMessage(i32 messageIndex)
 
     utils::GuiDebugPrint("msg start %d\n\r", messageIndex);
     msgFile = this->message.msgFile;
+#ifdef TH08_MODERN_64BIT
+    memset(&this->message, 0, sizeof(this->message));
+#else
     memset(&this->message, 0, 0x1570);
+#endif
     this->message.msgFile = msgFile;
 
     if (messageIndex == 0)
@@ -219,7 +223,11 @@ void GuiImpl::StartMessage(i32 messageIndex)
     }
 
     this->message.currentMsgIdx = messageIndex;
+#ifdef TH08_MODERN_64BIT
+    this->message.currentInstr = this->message.msgFile->GetMessage(messageIndex);
+#else
     this->message.currentInstr = this->message.msgFile->messages[messageIndex];
+#endif
     this->message.dialogueLines[0].scriptIndex = -1;
     this->message.dialogueLines[1].scriptIndex = -1;
     this->message.textBoxVisible = 1;
@@ -738,7 +746,7 @@ i32 GuiImpl::RunMsg()
 
         this->message.currentInstr =
             reinterpret_cast<GuiMessageInstruction *>(
-                reinterpret_cast<i32>(&this->message.currentInstr->args) +
+                reinterpret_cast<u8 *>(&this->message.currentInstr->args) +
                 this->message.currentInstr->instructionSize);
     }
 
@@ -2188,10 +2196,12 @@ ZunResult Gui::LoadMsg(const char *path)
     }
     this->impl->message.currentMsgIdx = -1;
     this->impl->message.currentInstr = NULL;
+#ifndef TH08_MODERN_64BIT
     for (i32 i = 0; i < this->impl->message.msgFile->messageCount; ++i)
     {
         ((i32 *)this->impl->message.msgFile)[i + 1] += (i32)this->impl->message.msgFile;
     }
+#endif
     return ZUN_SUCCESS;
 }
 

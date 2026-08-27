@@ -216,6 +216,7 @@ struct EnemyEclContext
     i16 subId;
     u8 unknown226[2];
 };
+#ifndef TH08_MODERN_64BIT
 typedef char EnemyEclContextCallbackOffsetCheck[offsetof(EnemyEclContext, callback) == 0x10 ? 1 : -1];
 typedef char EnemyEclContextIntVariablesOffsetCheck[offsetof(EnemyEclContext, intVariables) == 0x18 ? 1 : -1];
 typedef char EnemyEclContextFloatVariablesOffsetCheck[offsetof(EnemyEclContext, floatVariables) == 0x38 ? 1 : -1];
@@ -227,6 +228,7 @@ typedef char EnemyEclContextInterpolationSlotsOffsetCheck[offsetof(EnemyEclConte
 typedef char EnemyEclContextChildSlotOffsetCheck[offsetof(EnemyEclContext, childContextSlot) == 0x220 ? 1 : -1];
 typedef char EnemyEclContextSubIdOffsetCheck[offsetof(EnemyEclContext, subId) == 0x224 ? 1 : -1];
 typedef char EnemyEclContextSizeCheck[sizeof(EnemyEclContext) == 0x228 ? 1 : -1];
+#endif
 
 struct EclTimelineState
 {
@@ -244,10 +246,19 @@ struct EclManager
     ZunResult CallEclSub(EnemyEclContext *context, i16 subId);
     ZunResult RunEcl(Enemy *enemy);
     i32 GetTimelineCount();
+    #ifdef TH08_MODERN_64BIT
+    UINT_PTR GetTimeline(i32 index);
+    #else
     u32 GetTimeline(i32 index);
+    #endif
 
     EclRawHeader *eclFile;             // +0x000
+    #ifdef TH08_MODERN_64BIT
+    EclRawInstruction **subTable;
+    EclRawInstruction *timelineTable[16];
+    #else
     u32 *subTable;                     // +0x004
+    #endif
     EclTimelineState timelineState;    // +0x008
 };
 C_ASSERT(sizeof(EclManager) == 0x168);

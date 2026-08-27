@@ -2,8 +2,20 @@ cmake_minimum_required(VERSION 3.20)
 
 project(th08-modern LANGUAGES CXX)
 
-if(NOT CMAKE_SIZEOF_VOID_P EQUAL 4)
+if(APPLE AND NOT DEFINED CMAKE_OSX_DEPLOYMENT_TARGET)
+    set(CMAKE_OSX_DEPLOYMENT_TARGET "11.0" CACHE STRING
+        "Oldest macOS release supported by the Apple Silicon build")
+endif()
+
+option(TH08_ARM64_COMPILE_PROBE
+    "Compile the authored game sources for ARM64 without linking a platform runtime" OFF)
+
+if(NOT CMAKE_SIZEOF_VOID_P EQUAL 4 AND NOT TH08_ARM64_COMPILE_PROBE AND NOT APPLE)
     message(FATAL_ERROR "TH08 currently requires a 32-bit toolchain.")
+endif()
+
+if(APPLE AND NOT CMAKE_SIZEOF_VOID_P EQUAL 8)
+    message(FATAL_ERROR "The experimental macOS target requires a 64-bit toolchain.")
 endif()
 
 find_package(Python3 REQUIRED COMPONENTS Interpreter)
@@ -76,9 +88,59 @@ set(TH08_GAME_SOURCES
     src/pbg/PbgFile.cpp
 )
 
+# Apple Silicon bring-up gate: first prove that every authored translation unit
+# survives an ARM64/LP64 compiler.  This target deliberately stops before the
+# macOS SDK, SDL, renderer, bundle, and signing boundaries.  It is runnable on
+# non-Apple hosts with the repository cross-toolchain and remains separate from
+# the exact VC7 and playable Linux products.
+if(TH08_ARM64_COMPILE_PROBE)
+    add_library(th08-arm64-authored-compile OBJECT ${TH08_GAME_SOURCES})
+    add_dependencies(th08-arm64-authored-compile th08-modern-generated)
+    target_compile_features(th08-arm64-authored-compile PRIVATE cxx_std_98)
+    target_compile_definitions(th08-arm64-authored-compile PRIVATE
+        TH08_MODERN_PORT
+        TH08_MODERN_LINUX
+        TH08_MODERN_MACOS
+        TH08_MODERN_64BIT
+        WIN32_LEAN_AND_MEAN
+    )
+    target_include_directories(th08-arm64-authored-compile BEFORE PRIVATE
+        "${CMAKE_SOURCE_DIR}/src/modern/linux/include"
+        "${CMAKE_SOURCE_DIR}/src"
+        "${TH08_GENERATED_DIR}"
+    )
+    target_compile_options(th08-arm64-authored-compile PRIVATE
+        -O0
+        -Wno-attributes
+        -Wno-ignored-pragmas
+        -Wno-write-strings
+        "-include${CMAKE_SOURCE_DIR}/src/modern/macos/macos_compat.hpp"
+    )
+    if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
+        target_compile_options(th08-arm64-authored-compile PRIVATE -fpermissive)
+    else()
+        target_compile_options(th08-arm64-authored-compile PRIVATE
+            -fms-extensions
+            -Wno-address-of-temporary
+        )
+    endif()
+    return()
+endif()
+
 if(WIN32)
     list(APPEND TH08_GAME_SOURCES src/modern/windows_runtime.cpp)
     add_executable(th08-modern WIN32 ${TH08_GAME_SOURCES})
+elseif(APPLE)
+    list(APPEND TH08_GAME_SOURCES
+        src/modern/linux/d3d8_compat.cpp
+        src/modern/linux/d3dx8_compat.cpp
+        src/modern/linux/linux_compat.cpp
+        src/modern/linux/linux_runtime.cpp
+        resources/modern-icon.png
+    )
+    set_source_files_properties(resources/modern-icon.png PROPERTIES
+        MACOSX_PACKAGE_LOCATION Resources)
+    add_executable(th08-modern MACOSX_BUNDLE ${TH08_GAME_SOURCES})
 elseif(UNIX AND NOT APPLE)
     list(APPEND TH08_GAME_SOURCES
         src/modern/linux/d3d8_compat.cpp
@@ -162,6 +224,50 @@ elseif(MSVC)
     target_link_libraries(th08-modern PRIVATE
         dxguid d3dx8 dinput8 dsound d3d8 winmm
         kernel32 user32 gdi32 advapi32 shell32 ole32 oleaut32 uuid dbghelp
+    )
+elseif(APPLE)
+    find_package(PkgConfig REQUIRED)
+    pkg_check_modules(SDL2 REQUIRED IMPORTED_TARGET sdl2)
+    pkg_check_modules(SDL2_IMAGE REQUIRED IMPORTED_TARGET SDL2_image)
+    pkg_check_modules(SDL2_TTF REQUIRED IMPORTED_TARGET SDL2_ttf)
+    pkg_check_modules(FONTCONFIG REQUIRED IMPORTED_TARGET fontconfig)
+    find_package(OpenGL REQUIRED)
+    find_package(Threads REQUIRED)
+    find_package(Iconv REQUIRED)
+
+    target_compile_definitions(th08-modern PRIVATE
+        TH08_MODERN_LINUX
+        TH08_MODERN_MACOS
+        TH08_MODERN_64BIT
+    )
+    target_compile_options(th08-modern PRIVATE
+        -O0
+        -fms-extensions
+        -Wno-address-of-temporary
+        -Wno-ignored-pragmas
+        -Wno-write-strings
+        "-include${CMAKE_SOURCE_DIR}/src/modern/macos/macos_compat.hpp"
+    )
+    target_include_directories(th08-modern BEFORE PRIVATE
+        "${CMAKE_SOURCE_DIR}/src/modern/linux/include"
+    )
+    target_link_libraries(th08-modern PRIVATE
+        PkgConfig::SDL2
+        PkgConfig::SDL2_IMAGE
+        PkgConfig::SDL2_TTF
+        PkgConfig::FONTCONFIG
+        OpenGL::GL
+        Threads::Threads
+        Iconv::Iconv
+    )
+    set_target_properties(th08-modern PROPERTIES
+        MACOSX_BUNDLE_BUNDLE_NAME "TH08 Modern"
+        MACOSX_BUNDLE_GUI_IDENTIFIER "org.th08-research.th08-modern"
+        MACOSX_BUNDLE_COPYRIGHT "TH08 reconstruction contributors; original game assets are not included"
+        MACOSX_BUNDLE_SHORT_VERSION_STRING "0.1.0"
+        MACOSX_BUNDLE_BUNDLE_VERSION "1"
+        XCODE_ATTRIBUTE_ARCHS "arm64"
+        XCODE_ATTRIBUTE_CODE_SIGN_IDENTITY "-"
     )
 elseif(UNIX AND NOT APPLE)
     find_package(PkgConfig REQUIRED)

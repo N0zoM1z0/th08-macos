@@ -170,7 +170,17 @@ C_ASSERT(sizeof(GuiMessageInstruction) == 0x18);
 struct GuiMessageFile
 {
     i32 messageCount;
+#ifdef TH08_MODERN_64BIT
+    u32 messageOffsets[1];
+
+    GuiMessageInstruction *GetMessage(i32 index)
+    {
+        return reinterpret_cast<GuiMessageInstruction *>(
+            reinterpret_cast<u8 *>(this) + messageOffsets[index]);
+    }
+#else
     GuiMessageInstruction *messages[1];
+#endif
 };
 C_ASSERT(offsetof(GuiMessageFile, messages) == 0x4);
 
