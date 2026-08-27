@@ -38,8 +38,8 @@ The application bundle is written to:
 build/modern-macos-arm64/th08-modern.app
 ```
 
-The development build is ad-hoc signed. It is not notarized and does not yet
-have a stable player-facing distribution contract.
+The build embeds its non-system Homebrew dylibs and is ad-hoc signed. It is not
+notarized and does not yet have a stable player-facing distribution contract.
 
 ## Build boundaries
 
@@ -47,7 +47,7 @@ have a stable player-facing distribution contract.
   unit for arm64 without requiring SDL or linking a program. On Linux it uses
   `aarch64-linux-gnu-g++`; on Apple Silicon it uses the native Apple compiler.
 - `scripts/build-modern-macos.sh` links the SDL2/OpenGL `.app` and verifies the
-  Mach-O architecture and bundle identifier.
+  Mach-O architecture, bundle identifier, and embedded runtime dependencies.
 - `scripts/smoke-modern-macos.sh` launches the native entry point without game
   data and verifies that it reaches the expected `--data-dir` rejection path.
 - `.github/workflows/macos-arm64.yml` runs both gates on GitHub's `macos-15`
@@ -61,9 +61,9 @@ those conversions must never be merged into the exact VC7 build branch.
 
 - Startup and rendering have not yet been exercised on a real Apple Silicon
   desktop with the legal DAT archives.
-- The bundle currently links Homebrew SDL2, SDL2_image, SDL2_ttf, and
-  Fontconfig libraries. CI reports this and the resulting artifact should be
-  treated as a developer build, not a portable release.
+- The bundle embeds Homebrew SDL2, SDL2_image, SDL2_ttf, Fontconfig, and their
+  non-system dependencies. It is still a developer build until tested outside
+  the CI image and notarized for player-facing distribution.
 - OpenGL is deprecated on macOS and is only the shortest path to the first
   frame. Metal is the intended long-term renderer.
 - Native score/config/replay I/O needs continued LP64 format testing. Replay

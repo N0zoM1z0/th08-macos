@@ -26,10 +26,14 @@ if [[ "${bundle_id}" != "org.th08-research.th08-modern" ]]; then
     exit 1
 fi
 
-if otool -L "${executable}" | grep -Eq '/(Cellar|opt/homebrew)/'; then
-    echo "The bundle still links Homebrew libraries and is a development artifact." >&2
-else
-    echo "No direct Homebrew library references were found."
-fi
+while IFS= read -r candidate; do
+    if file "${candidate}" | grep -q 'Mach-O'; then
+        if otool -L "${candidate}" | grep -Eq '/(Cellar|opt/homebrew)/'; then
+            echo "Bundle item still links a Homebrew path: ${candidate}" >&2
+            exit 1
+        fi
+        lipo "${candidate}" -verify_arch arm64
+    fi
+done < <(find "${bundle}/Contents" -type f -print)
 
 echo "Verified arm64 bundle: ${bundle}"

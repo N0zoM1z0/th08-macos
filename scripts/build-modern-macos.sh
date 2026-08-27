@@ -23,8 +23,9 @@ cmake -S "${repo_dir}" -B "${build_dir}" -G Ninja \
 cmake --build "${build_dir}" --parallel "${TH08_MACOS_BUILD_JOBS:-3}"
 
 bundle="${build_dir}/th08-modern.app"
+"${repo_dir}/scripts/bundle-modern-macos-deps.sh" "${bundle}"
 "${repo_dir}/scripts/verify-modern-macos.sh" "${bundle}"
-codesign --force --sign - --timestamp=none "${bundle}"
+codesign --force --deep --sign - --timestamp=none "${bundle}"
 codesign --verify --deep --strict "${bundle}"
 
 echo "Built Apple Silicon application: ${bundle}"
