@@ -7,11 +7,13 @@ an Apple Silicon GitHub Actions build. The application reuses the SDL2 audio,
 input, and window compatibility layer from the Linux port and initially maps
 the D3D8 calls to macOS's OpenGL compatibility framework.
 
-This is not a playable release yet. The authored sources compile for AArch64,
-but the first CI bundle still needs real startup and gameplay validation. The
-OpenGL bridge is deliberately a bring-up backend: Apple deprecated OpenGL in
-macOS 10.14, so the durable renderer should reuse the Web port's batching
-model behind a Metal implementation.
+This is not a playable release yet. CI now compiles the authored sources for
+AArch64, builds a self-contained bundle, and launches it far enough to reach
+the expected missing-`th08.dat` error. Startup with the legal DAT archives,
+rendering, input, audio, and gameplay still need validation on a real Apple
+Silicon desktop. The OpenGL bridge is deliberately a bring-up backend: Apple
+deprecated OpenGL in macOS 10.14, so the durable renderer should reuse the Web
+port's batching model behind a Metal implementation.
 
 ## Build on an Apple Silicon Mac
 

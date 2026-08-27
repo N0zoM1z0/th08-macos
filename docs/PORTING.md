@@ -11,11 +11,13 @@ authored game sources without making an exact-code claim.
 | --- | --- | --- |
 | Linux i386 | **Done** | Source build, one-command setup/run, and CI artifact are available |
 | Windows x86 | **In progress** | Current native build/launcher is not yet a reliable distributable product |
-| macOS | **In progress** | Platform backend and packaging are pending |
+| macOS arm64 | **Bring-up** | Native bundle, dependency packaging, startup smoke test, and CI artifact are available |
 
-The ports compile the same production-authored game sources. A 32-bit build is
-currently required because reconstructed layouts, target-owned global
-addresses, and some behavior still depend on the original x86 pointer width.
+The ports compile the same production-authored game sources. Linux and Windows
+remain 32-bit because reconstructed layouts, target-owned global addresses,
+and some behavior still depend on the original x86 pointer width. The macOS
+lane instead uses explicit LP64 adapters for the fixed-width retail file
+formats and avoids the ELF fixed-address symbol aliases.
 
 ### Native Windows
 
@@ -139,6 +141,7 @@ the reusable lessons from the bring-up.
    gaps without changing replay-visible simulation behavior.
 2. Finish a redistributable Windows x86 backend/package and validate startup
    on a clean native Windows host.
-3. Add and validate the macOS backend after the portable boundary is stable.
-4. Consider wider architectures only after removing pointer-width and fixed-
-   address assumptions from the shared runtime.
+3. Exercise the Apple Silicon bundle with legal retail data on a desktop,
+   then validate gameplay and distribution outside the CI image.
+4. Continue the LP64 binary-format audit and replace the deprecated macOS
+   OpenGL bring-up renderer with a durable Metal backend.

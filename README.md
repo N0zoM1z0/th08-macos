@@ -27,7 +27,7 @@ source. Strict comparison currently accepts 1,105 of those functions, covering
 | Web | **Playable** | Public WebAssembly/WebGL 2 build |
 | Linux | **Playable** | Native i386 ELF and portable CI package |
 | Windows | **In progress** | Native startup and redistributable packaging are incomplete |
-| macOS | **Bring-up** | Apple Silicon source gate, native bundle target, and CI are implemented |
+| macOS | **Bring-up** | Apple Silicon bundle, startup smoke test, and CI artifact are implemented |
 
 The exact-reconstruction lane and the playable-port lanes are independent.
 Running on a modern platform is not an exactness claim, and source presence is
@@ -46,7 +46,7 @@ Contributions are welcome. Useful areas include:
 - evidence-backed exact reconstruction and whole-image layout work;
 - reliable native Windows startup and replacement of the non-redistributable
   D3DX debug dependency;
-- a native macOS window, input, audio, renderer, and packaging backend;
+- Apple Silicon gameplay validation, Metal rendering, and distributable packaging;
 - Linux renderer fixes, MIDI support, and testing on additional hardware;
 - browser correctness, performance, and compatibility work in
   [N0zoM1z0/th08-web](https://github.com/N0zoM1z0/th08-web).
@@ -171,10 +171,11 @@ directory, and ship without Wine or non-redistributable SDK components.
 **Status: Apple Silicon bring-up**
 
 See the [native macOS guide](docs/PLAY_MACOS.md) for the arm64 build and data
-launcher. CI compiles all authored sources and builds an ad-hoc-signed `.app`
-with the SDL2/OpenGL bring-up backend. This is a developer artifact rather
-than a playable release until startup and gameplay are tested on real Apple
-Silicon hardware with legally supplied game data.
+launcher. CI compiles all authored sources, builds an ad-hoc-signed `.app`
+with the SDL2/OpenGL bring-up backend, embeds its non-system dependencies, and
+smoke-tests the native entry point. This remains a developer artifact rather
+than a playable release until startup with the legal DAT archives and gameplay
+are tested on real Apple Silicon hardware.
 
 ## Exact reconstruction
 
