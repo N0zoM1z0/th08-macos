@@ -12,6 +12,6 @@ include(BundleUtilities)
 set(BU_CHMOD_BUNDLE_ITEMS TRUE)
 fixup_bundle(
     "${TH08_MACOS_BUNDLE}"
-    ""
+    "${TH08_MACOS_EXTRA_LIBS}"
     "${TH08_MACOS_DEPENDENCY_DIRS}"
 )

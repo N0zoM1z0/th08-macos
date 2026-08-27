@@ -38,8 +38,10 @@ The application bundle is written to:
 build/modern-macos-arm64/th08-modern.app
 ```
 
-The build embeds its non-system Homebrew dylibs and is ad-hoc signed. It is not
-notarized and does not yet have a stable player-facing distribution contract.
+The build embeds its non-system Homebrew dylibs, including the SDL3 library
+loaded dynamically by current Homebrew sdl2-compat, and is ad-hoc signed. It
+is not notarized and does not yet have a stable player-facing distribution
+contract.
 
 ## Build boundaries
 
