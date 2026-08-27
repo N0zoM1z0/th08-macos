@@ -48,6 +48,8 @@ have a stable player-facing distribution contract.
   `aarch64-linux-gnu-g++`; on Apple Silicon it uses the native Apple compiler.
 - `scripts/build-modern-macos.sh` links the SDL2/OpenGL `.app` and verifies the
   Mach-O architecture and bundle identifier.
+- `scripts/smoke-modern-macos.sh` launches the native entry point without game
+  data and verifies that it reaches the expected `--data-dir` rejection path.
 - `.github/workflows/macos-arm64.yml` runs both gates on GitHub's `macos-15`
   Apple Silicon runner and uploads a short-lived development artifact.
 

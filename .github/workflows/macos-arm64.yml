@@ -39,6 +39,9 @@ jobs:
           TH08_MACOS_BUILD_JOBS: "3"
         run: scripts/build-modern-macos.sh
 
+      - name: Smoke-test the native entry point
+        run: scripts/smoke-modern-macos.sh
+
       - name: Package the development bundle
         run: scripts/package-modern-macos.sh
 
