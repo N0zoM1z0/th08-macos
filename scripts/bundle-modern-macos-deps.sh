@@ -30,7 +30,11 @@ if command -v brew >/dev/null 2>&1; then
     # must be supplied to BundleUtilities explicitly.
     sdl3_dylib="$(brew --prefix sdl3)/lib/libSDL3.dylib"
     if [[ -f "${sdl3_dylib}" ]]; then
-        extra_libs+=("${sdl3_dylib}")
+        frameworks_dir="${bundle}/Contents/Frameworks"
+        embedded_sdl3="${frameworks_dir}/libSDL3.dylib"
+        mkdir -p "${frameworks_dir}"
+        cmake -E copy_if_different "${sdl3_dylib}" "${embedded_sdl3}"
+        extra_libs+=("${embedded_sdl3}")
         dependency_dirs+=("$(dirname "${sdl3_dylib}")")
     fi
 fi
