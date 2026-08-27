@@ -19,6 +19,16 @@ ZunBool IsDisableResourceReload();
 DIFFABLE_STATIC(Spellcard, g_Spellcard);
 DIFFABLE_STATIC(ChainElem *, g_SpellcardCalcChain);
 DIFFABLE_STATIC(i32, g_LastSpellCount);
+
+#ifdef TH08_MODERN_64BIT
+namespace modern
+{
+void InitializeLastSpellCount(i32 value)
+{
+    g_LastSpellCount = value;
+}
+} // namespace modern
+#endif
 DIFFABLE_STATIC(AnmLoaded *, g_SpellcardBackgroundAnm);
 
 struct SpellcardFlagBits

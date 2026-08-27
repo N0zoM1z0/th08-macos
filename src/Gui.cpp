@@ -36,6 +36,17 @@ struct GuiMessageTextColorSet
 };
 DIFFABLE_STATIC_ARRAY(GuiMessageTextColorSet, SHOT_ALL, g_GuiMessageTextColors);
 
+#ifdef TH08_MODERN_64BIT
+namespace modern
+{
+void InitializeGuiTables(const i32 *stageBonuses, const u32 *messageColors)
+{
+    memcpy(g_GuiStageClearBonuses, stageBonuses, sizeof(g_GuiStageClearBonuses));
+    memcpy(g_GuiMessageTextColors, messageColors, sizeof(g_GuiMessageTextColors));
+}
+} // namespace modern
+#endif
+
 DIFFABLE_STATIC_ARRAY_ASSIGN(
     GuiStageMusicContextSet, GUI_STAGE_MUSIC_CONTEXT_COUNT, g_GuiStageMusicContexts) = {
     {{1, 2, 0}},

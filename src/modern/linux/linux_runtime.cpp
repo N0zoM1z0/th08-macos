@@ -1,4 +1,5 @@
 #include "modern/windows_runtime.hpp"
+#include "AnmManager.hpp"
 
 #include <execinfo.h>
 #include <fcntl.h>
@@ -54,11 +55,6 @@ int __fastcall UpdateTimedRadialTrail(Effect *);
 int __fastcall UpdateFadingRadialTrail(Effect *);
 int __fastcall SyncAnchoredRadialTrail(Effect *);
 
-// This retail table entry points at an AnmVm member. On the 32-bit Linux ABI
-// its code entry receives `this` as the first stack argument, matching the
-// reconstructed effect callback invocation.
-extern "C" int UpdatePulsingRadialTrailCallback(AnmVm *) asm("_ZN4th085AnmVm24UpdatePulsingRadialTrailEv");
-
 namespace modern
 {
 struct ModernEffectTemplate
@@ -68,9 +64,13 @@ struct ModernEffectTemplate
     uintptr_t initialize;
 };
 
-// These aliases bind the semantic target globals exported at fixed addresses
-// by th08-layout.ld.  Keep the compatibility storage types local to the Linux
-// runtime: the reconstructed VC7 declarations retain their original owners.
+#ifdef TH08_MODERN_64BIT
+void InitializeEffectTemplates(const void *templates);
+void InitializeGuiTables(const int32_t *stageBonuses, const uint32_t *messageColors);
+void InitializeLastSpellCount(int32_t value);
+#else
+// The 32-bit Linux link still binds these target globals at fixed addresses.
+// Its semantic declarations retain their retail sizes and owners.
 extern int32_t g_ModernLastSpellCountStorage asm("_ZN4th0816g_LastSpellCountE");
 extern ModernEffectTemplate g_ModernEffectTemplatesStorage[66]
     asm("_ZN4th0817g_EffectTemplatesE");
@@ -78,6 +78,7 @@ extern int32_t g_ModernGuiStageClearBonusesStorage[9]
     asm("_ZN4th0822g_GuiStageClearBonusesE");
 extern uint32_t g_ModernGuiMessageTextColorsStorage[12][4]
     asm("_ZN4th0822g_GuiMessageTextColorsE");
+#endif
 
 namespace
 {
@@ -134,6 +135,11 @@ uintptr_t CodeAddress(int (__fastcall *callback)(AnmVm *))
 uintptr_t CodeAddress(int (__fastcall *callback)(Effect *))
 {
     return reinterpret_cast<uintptr_t>(callback);
+}
+
+int __fastcall UpdatePulsingRadialTrailCallback(AnmVm *vm)
+{
+    return vm->UpdatePulsingRadialTrail();
 }
 
 void InitializeTargetData()
@@ -216,10 +222,16 @@ void InitializeTargetData()
         {0x00e8f0ff, 0x00f0e8ff, 0x00ffe8f0, 0x00ffe8f0},
         {0x00e8f0ff, 0x00f0e8ff, 0x00ffe8f0, 0x00ffe8f0},
     };
+#ifdef TH08_MODERN_64BIT
+    InitializeLastSpellCount(43);
+    InitializeEffectTemplates(effectTemplates);
+    InitializeGuiTables(stageScoreTables, &messageTextColors[0][0]);
+#else
     g_ModernLastSpellCountStorage = 43;
     memcpy(g_ModernEffectTemplatesStorage, effectTemplates, sizeof(effectTemplates));
     memcpy(g_ModernGuiStageClearBonusesStorage, stageScoreTables, sizeof(stageScoreTables));
     memcpy(g_ModernGuiMessageTextColorsStorage, messageTextColors, sizeof(messageTextColors));
+#endif
 }
 }
 

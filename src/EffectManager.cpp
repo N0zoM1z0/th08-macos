@@ -85,6 +85,14 @@ C_ASSERT(offsetof(EffectTemplate, updateCallback) == 0x4);
 C_ASSERT(offsetof(EffectTemplate, initializeCallback) == 0x8);
 #ifdef TH08_MODERN_64BIT
 DIFFABLE_STATIC_ARRAY(EffectTemplate, 66, g_EffectTemplates);
+
+namespace modern
+{
+void InitializeEffectTemplates(const void *templates)
+{
+    memcpy(g_EffectTemplates, templates, sizeof(g_EffectTemplates));
+}
+} // namespace modern
 #else
 DIFFABLE_STATIC_ARRAY(EffectTemplate, 20, g_EffectTemplates);
 #endif
